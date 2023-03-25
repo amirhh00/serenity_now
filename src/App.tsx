@@ -1,12 +1,21 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Pathtracer } from '@react-three/gpu-pathtracer';
-import { Environment, OrbitControls } from '@react-three/drei';
-import Grass from './Grass';
+import { useEffect, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
+import init from "./three";
+import { GLTFResult } from "./@types/gltf";
 
 function App() {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { nodes, materials } = useGLTF("/models/landscape.glb") as GLTFResult;
+  useEffect(() => {
+    if (!window.THREE && canvas.current && nodes) {
+      init(canvas.current);
+    }
+  }, [nodes]);
+
   return (
     <div className="App">
-      <Canvas id="three" style={{ height: '100vh' }}>
+      <canvas ref={canvas}></canvas>
+      {/* <Canvas id="three" style={{ height: '100vh' }}>
         <OrbitControls
           makeDefault
           target={[0, 0, 0]}
@@ -16,7 +25,7 @@ function App() {
         <pointLight position={[10, 10, 10]} />
         <Environment preset="city" />
         <Grass />
-      </Canvas>
+      </Canvas> */}
     </div>
   );
 }
