@@ -21,7 +21,7 @@ export default function init(options: Options) {
   //Variables for blade mesh
   var joints = 4;
   var bladeWidth = 0.03;
-  var bladeHeight = 0.15;
+  var bladeHeight = 0.2;
 
   //Patch side length
   var width = 100;
@@ -32,7 +32,7 @@ export default function init(options: Options) {
   //Radius of the sphere onto which the ground plane is bent
   var radius = 240;
   //User movement speed
-  var speed = 3;
+  var speed = 0.5;
 
   //The global coordinates
   //The geometry never leaves a box of width*width around (0, 0)
@@ -40,7 +40,7 @@ export default function init(options: Options) {
   var pos = new THREE.Vector2(0.01, 0.01);
 
   //Number of blades
-  var instances = 700000;
+  var instances = 1000000;
   if (mobile) {
     instances = 7000;
     width = 50;
@@ -355,7 +355,7 @@ vec3 getNormal(vec3 pos){
   };
 
   var ground = new THREE.Mesh(groundGeometry, groundMaterial);
-
+  ground.position.y += 0.3;
   ground.geometry.computeVertexNormals();
   scene.add(ground);
 
