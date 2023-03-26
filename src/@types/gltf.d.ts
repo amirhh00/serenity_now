@@ -37,3 +37,12 @@ export type PackGltf = GLTF & {
     MT_PM_V59_Myrica_rubra_01_Trunk_01: THREE.MeshStandardMaterial;
   };
 };
+
+export type PortalGltf = GLTF & {
+  nodes: {
+    Frame: THREE.Mesh;
+    Edge: THREE.Mesh;
+    Mirror: THREE.Mesh;
+  };
+  materials: {};
+};

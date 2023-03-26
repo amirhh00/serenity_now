@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { PackGltf } from "./@types/gltf";
+import { PackGltf, PortalGltf } from "./@types/gltf";
 
 interface Options {
   canvas: HTMLCanvasElement;
   packNodes: PackGltf["nodes"];
+  portalNodes: THREE.Group;
   [key: string]: any;
 }
 
@@ -19,8 +20,8 @@ export default function init(options: Options) {
 
   //Variables for blade mesh
   var joints = 4;
-  var bladeWidth = 0.12;
-  var bladeHeight = 0.5;
+  var bladeWidth = 0.03;
+  var bladeHeight = 0.15;
 
   //Patch side length
   var width = 100;
@@ -39,7 +40,7 @@ export default function init(options: Options) {
   var pos = new THREE.Vector2(0.01, 0.01);
 
   //Number of blades
-  var instances = 40000;
+  var instances = 700000;
   if (mobile) {
     instances = 7000;
     width = 50;
@@ -82,8 +83,8 @@ export default function init(options: Options) {
   var FOV = 45; //2 * Math.atan(window.innerHeight / distance) * 180 / Math.PI;
   var camera = new THREE.PerspectiveCamera(FOV, window.innerWidth / window.innerHeight, 1, 20000);
   window.camera = camera;
-  camera.position.set(-1, 3, 10);
-  camera.lookAt(new THREE.Vector3(0, 10, 50));
+  camera.position.set(-1, -1.5, 50);
+  camera.lookAt(new THREE.Vector3(0, -1.5, 50));
 
   scene.add(camera);
   backgroundScene.add(camera);
@@ -94,7 +95,7 @@ export default function init(options: Options) {
 
   //OrbitControls.js for camera manipulation
   var controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.y = 3;
+  controls.target.y = -1.5;
   // controls.target0.set(0, 5, 5);
   // controls.autoRotate = rotate;
   // controls.autoRotateSpeed = 1.0;
@@ -807,13 +808,24 @@ void main() {
     if (Object.prototype.hasOwnProperty.call(options.packNodes, key)) {
       // @ts-ignore
       const element: THREE.Mesh = options.packNodes[key];
-      if (element.isMesh && /.*\b(Hill|Mountain).*/.test(element.name)) {
-        element.position.y -= 20;
-        element.position.z += 70;
+      if (element.isMesh && /.*\b(Mountain).*/.test(element.name)) {
+        element.scale.set(element.scale.x * 2, element.scale.y * 5, element.scale.z * 2);
+        element.position.y -= 50;
+        element.position.x += 0;
+        element.position.z += 0;
         scene.add(element);
       }
     }
   }
+  // options.portalNodes.rotateY(Math.PI);
+  options.portalNodes.traverse((obj) => {
+    //@ts-ignore
+    obj.material = new THREE.MeshBasicMaterial({ color: "white" });
+  });
+  options.portalNodes.position.x -= 3;
+  options.portalNodes.position.y = -2.5;
+  options.portalNodes.position.z = 35;
+  scene.add(options.portalNodes);
 
   function move(dT: number) {
     camera.getWorldDirection(viewDirection);

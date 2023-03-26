@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import init from "./three";
-import { GLTFResult, PackGltf } from "./@types/gltf";
+import { GLTFResult, PackGltf, PortalGltf } from "./@types/gltf";
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<HTMLImageElement>(null);
   const { nodes: landscapeNodes } = useGLTF("/models/landscape.glb") as GLTFResult;
   const { nodes: packNodes } = useGLTF("/models/pack.glb") as PackGltf;
+  const { scene: portalNodes } = useGLTF("/models/portal.glb") as PortalGltf;
 
   useEffect(() => {
-    if (!window.THREE && mapRef.current && canvasRef.current && landscapeNodes && packNodes) {
-      init({ canvas: canvasRef.current, packNodes });
+    if (!window.THREE && mapRef.current && canvasRef.current && landscapeNodes && packNodes && portalNodes) {
+      init({ canvas: canvasRef.current, packNodes, portalNodes });
     }
   }, [landscapeNodes, packNodes]);
 
