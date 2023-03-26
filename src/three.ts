@@ -1,14 +1,14 @@
-//Based on:
-//"Realistic real-time grass rendering" by Eddie Lee, 2010
-//https://www.eddietree.com/grass
-//https://en.wikibooks.org/wiki/GLSL_Programming/Unity/Translucent_Surfaces
-
-//There are two scenes: one for the sky/sun and another for the grass. The sky is rendered without depth information on a plane geometry that fills the screen. Automatic clearing is disabled and after the sky has been rendered, we draw the grass scene on top of the background. Both scenes share a camera and light direction information.
-
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { PackGltf } from "./@types/gltf";
 
-export default function init(canvas: HTMLCanvasElement) {
+interface Options {
+  canvas: HTMLCanvasElement;
+  packNodes: PackGltf["nodes"];
+  [key: string]: any;
+}
+
+export default function init(options: Options) {
   window.THREE = THREE;
   const mobile =
     navigator.userAgent.match(/Android/i) ||
@@ -20,7 +20,7 @@ export default function init(canvas: HTMLCanvasElement) {
   //Variables for blade mesh
   var joints = 4;
   var bladeWidth = 0.12;
-  var bladeHeight = 1;
+  var bladeHeight = 0.5;
 
   //Patch side length
   var width = 100;
@@ -71,7 +71,7 @@ export default function init(canvas: HTMLCanvasElement) {
   //Sky scene
   var backgroundScene = new THREE.Scene();
 
-  var renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
+  var renderer = new THREE.WebGLRenderer({ antialias: true, canvas: options.canvas });
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -81,9 +81,9 @@ export default function init(canvas: HTMLCanvasElement) {
 
   var FOV = 45; //2 * Math.atan(window.innerHeight / distance) * 180 / Math.PI;
   var camera = new THREE.PerspectiveCamera(FOV, window.innerWidth / window.innerHeight, 1, 20000);
-
-  camera.position.set(-30, 5, 30);
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
+  window.camera = camera;
+  camera.position.set(-1, 3, 10);
+  camera.lookAt(new THREE.Vector3(0, 10, 50));
 
   scene.add(camera);
   backgroundScene.add(camera);
@@ -94,16 +94,17 @@ export default function init(canvas: HTMLCanvasElement) {
 
   //OrbitControls.js for camera manipulation
   var controls = new OrbitControls(camera, renderer.domElement);
-  controls.autoRotate = rotate;
-  controls.autoRotateSpeed = 1.0;
-  controls.maxDistance = 65.0;
-  if (mobile) {
-    controls.maxDistance = 35.0;
-  }
-  controls.minDistance = 5.0;
+  controls.target.y = 3;
+  // controls.target0.set(0, 5, 5);
+  // controls.autoRotate = rotate;
+  // controls.autoRotateSpeed = 1.0;
+  // controls.maxDistance = 65.0;
+  // if (mobile) controls.maxDistance = 35.0;
+
+  // controls.minDistance = 5.0;
   //Disable keys to stop arrow keys from moving the camera
-  controls.enabled = false;
-  controls.enablePan = false;
+  // controls.enableKeys = false;
+  // controls.enablePan = false;
   controls.update();
 
   // const stats = new Stats();
@@ -127,7 +128,7 @@ gui.close();
   function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    backgroundMaterial.uniforms.resolution.value = new THREE.Vector2(canvas.clientWidth, canvas.clientHeight);
+    backgroundMaterial.uniforms.resolution.value = new THREE.Vector2(options.canvas.clientWidth, options.canvas.clientHeight);
     camera.fov = FOV;
     camera.updateProjectionMatrix();
     backgroundMaterial.uniforms.fov.value = FOV;
@@ -147,9 +148,13 @@ gui.close();
   //https://discourse.threejs.org/t/how-do-i-use-my-own-custom-shader-as-a-scene-background/13598/2
   const backgroundMaterial = new THREE.ShaderMaterial({
     uniforms: {
+      // @ts-ignore
       sunDirection: { type: "vec3", value: new THREE.Vector3(Math.sin(azimuth), Math.sin(elevation), -Math.cos(azimuth)) },
-      resolution: { type: "vec2", value: new THREE.Vector2(canvas.clientWidth, canvas.clientHeight) },
+      // @ts-ignore
+      resolution: { type: "vec2", value: new THREE.Vector2(options.canvas.clientWidth, options.canvas.clientHeight) },
+      // @ts-ignore
       fogFade: { type: "float", value: fogFade },
+      // @ts-ignore
       fov: { type: "float", value: FOV },
     },
     vertexShader: `
@@ -253,14 +258,16 @@ gui.close();
 
   //************** Ground **************
   //Ground material is a modification of the existing THREE.MeshPhongMaterial rather than one from scratch
+
   var groundBaseGeometry = new THREE.PlaneGeometry(width, width, resolution, resolution);
+  // const groundBaseGeometry = base;
   groundBaseGeometry.lookAt(new THREE.Vector3(0, 1, 0));
-  groundBaseGeometry.verticesNeedUpdate = true;
+  // groundBaseGeometry.verticesNeedUpdate = true;
 
   var groundGeometry = new THREE.PlaneGeometry(width, width, resolution, resolution);
   groundGeometry.setAttribute("basePosition", groundBaseGeometry.getAttribute("position"));
   groundGeometry.lookAt(new THREE.Vector3(0, 1, 0));
-  groundGeometry.verticesNeedUpdate = true;
+  // groundGeometry.verticesNeedUpdate = true;
   var groundMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color("rgb(10%, 25%, 2%)") });
 
   var sharedPrefix = `
@@ -620,16 +627,23 @@ void main() {
   let quaternion2 = new THREE.Quaternion();
 
   //Bend grass base geometry for more organic look
+  // @ts-ignore
   for (let v = 0; v < grassBaseGeometry.attributes.position.array.length; v += 3) {
     quaternion2.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    // @ts-ignore
     vertex.x = grassBaseGeometry.attributes.position.array[v];
+    // @ts-ignore
     vertex.y = grassBaseGeometry.attributes.position.array[v + 1];
+    // @ts-ignore
     vertex.z = grassBaseGeometry.attributes.position.array[v + 2];
     let frac = vertex.y / bladeHeight;
     quaternion2.slerp(quaternion0, frac);
     vertex.applyQuaternion(quaternion2);
+    // @ts-ignore
     grassBaseGeometry.attributes.position.array[v] = vertex.x;
+    // @ts-ignore
     grassBaseGeometry.attributes.position.array[v + 1] = vertex.y;
+    // @ts-ignore
     grassBaseGeometry.attributes.position.array[v + 2] = vertex.z;
   }
 
@@ -687,23 +701,38 @@ void main() {
   //Define the material, specifying attributes, uniforms, shaders etc.
   var grassMaterial = new THREE.RawShaderMaterial({
     uniforms: {
+      // @ts-ignore
       time: { type: "float", value: 0 },
+      // @ts-ignore
       delta: { type: "float", value: delta },
+      // @ts-ignore
       posX: { type: "float", value: pos.x },
+      // @ts-ignore
       posZ: { type: "float", value: pos.y },
+      // @ts-ignore
       radius: { type: "float", value: radius },
+      // @ts-ignore
       width: { type: "float", value: width },
       map: { value: grassTexture },
       alphaMap: { value: alphaMap },
       noiseTexture: { value: noiseTexture },
+      // @ts-ignore
       sunDirection: { type: "vec3", value: new THREE.Vector3(Math.sin(azimuth), Math.sin(elevation), -Math.cos(azimuth)) },
+      // @ts-ignore
       cameraPosition: { type: "vec3", value: camera.position },
+      // @ts-ignore
       ambientStrength: { type: "float", value: ambientStrength },
+      // @ts-ignore
       translucencyStrength: { type: "float", value: translucencyStrength },
+      // @ts-ignore
       diffuseStrength: { type: "float", value: diffuseStrength },
+      // @ts-ignore
       specularStrength: { type: "float", value: specularStrength },
+      // @ts-ignore
       shininess: { type: "float", value: shininess },
+      // @ts-ignore
       lightColour: { type: "vec3", value: sunColour },
+      // @ts-ignore
       specularColour: { type: "vec3", value: specularColour },
     },
     vertexShader: grassVertexSource,
@@ -774,6 +803,18 @@ void main() {
     return sV;
   }
 
+  for (const key in options.packNodes) {
+    if (Object.prototype.hasOwnProperty.call(options.packNodes, key)) {
+      // @ts-ignore
+      const element: THREE.Mesh = options.packNodes[key];
+      if (element.isMesh && /.*\b(Hill|Mountain).*/.test(element.name)) {
+        element.position.y -= 20;
+        element.position.z += 70;
+        scene.add(element);
+      }
+    }
+  }
+
   function move(dT: number) {
     camera.getWorldDirection(viewDirection);
     length = Math.sqrt(viewDirection.x * viewDirection.x + viewDirection.z * viewDirection.z);
@@ -821,10 +862,10 @@ void main() {
   var thisFrame;
   var dT = 0;
 
-  function draw() {
+  function animate() {
     //Update time
     thisFrame = Date.now();
-    dT = (thisFrame - lastFrame) / 200.0;
+    dT = (thisFrame - lastFrame) / 500.0;
     time += dT;
     move(dT);
     lastFrame = thisFrame;
@@ -838,8 +879,8 @@ void main() {
     if (rotate) {
       controls.update();
     }
-    requestAnimationFrame(draw);
+    requestAnimationFrame(animate);
   }
 
-  draw();
+  animate();
 }

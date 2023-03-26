@@ -1,20 +1,24 @@
 import { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import init from "./three";
-import { GLTFResult } from "./@types/gltf";
+import { GLTFResult, PackGltf } from "./@types/gltf";
 
 function App() {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const { nodes, materials } = useGLTF("/models/landscape.glb") as GLTFResult;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mapRef = useRef<HTMLImageElement>(null);
+  const { nodes: landscapeNodes } = useGLTF("/models/landscape.glb") as GLTFResult;
+  const { nodes: packNodes } = useGLTF("/models/pack.glb") as PackGltf;
+
   useEffect(() => {
-    if (!window.THREE && canvas.current && nodes) {
-      init(canvas.current);
+    if (!window.THREE && mapRef.current && canvasRef.current && landscapeNodes && packNodes) {
+      init({ canvas: canvasRef.current, packNodes });
     }
-  }, [nodes]);
+  }, [landscapeNodes, packNodes]);
 
   return (
-    <div className="App">
-      <canvas ref={canvas}></canvas>
+    <div id="App">
+      <canvas id="three" ref={canvasRef}></canvas>
+      <img style={{ display: "none" }} src="/textures/map.png" crossOrigin="anonymous" ref={mapRef} />
       {/* <Canvas id="three" style={{ height: '100vh' }}>
         <OrbitControls
           makeDefault

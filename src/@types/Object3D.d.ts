@@ -10,3 +10,11 @@
 //     geometry?: BufferGeometry;
 //   }
 // }
+
+interface Window {
+  camera?: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer | undefined;
+  ThreeCTX: any;
+  THREE: any;
+  dev?: boolean;
+}
