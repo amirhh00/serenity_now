@@ -1,38 +1,30 @@
-import { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
-import init from "./three";
-import { GLTFResult, PackGltf, PortalGltf } from "./@types/gltf";
+import {Canvas} from "@react-three/fiber"
 
-function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mapRef = useRef<HTMLImageElement>(null);
-  const { nodes: landscapeNodes } = useGLTF("/models/landscape.glb") as GLTFResult;
-  const { nodes: packNodes } = useGLTF("/models/pack.glb") as PackGltf;
-  const { scene: portalNodes } = useGLTF("/models/portal.glb") as PortalGltf;
+function Box() {
+  const { viewport } = useThree()
+  const { width, height, factor } = viewport
+  const [spring, setSpring] = useSpring(() => ({ position: [0, 0, 0], scale: [1, 1, 1] }))
 
-  useEffect(() => {
-    if (!window.THREE && mapRef.current && canvasRef.current && landscapeNodes && packNodes && portalNodes) {
-      init({ canvas: canvasRef.current, packNodes, portalNodes });
-    }
-  }, [landscapeNodes, packNodes]);
+  const bind = useDrag(({ offset: [x, y] }) => setSpring({ position: [x, y, 0] }), {
+    // bounds are expressed in canvas coordinates!
+    bounds: { left: -width / 2, right: width / 2, top: -height / 2, bottom: height / 2 },
+    rubberband: true,
+    transform: ([x, y]) => [x / factor, -y / factor]
+  })
 
   return (
-    <div id="App">
-      <canvas id="three" ref={canvasRef}></canvas>
-      <img style={{ display: "none" }} src="/textures/map.png" crossOrigin="anonymous" ref={mapRef} />
-      {/* <Canvas id="three" style={{ height: '100vh' }}>
-        <OrbitControls
-          makeDefault
-          target={[0, 0, 0]}
-          maxPolarAngle={Math.PI * 0.5}
-        />
-        <ambientLight />
-        <pointLight position={[10, 10, 10]} />
-        <Environment preset="city" />
-        <Grass />
-      </Canvas> */}
-    </div>
-  );
+    <a3f.mesh {...bind()} {...spring}>
+      <boxBufferGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="orange" />
+    </a3f.mesh>
+  )
 }
-
-export default App;
+function Transform() {
+  return (
+    <Canvas>
+      <ambientLight intensity={0.5} />
+      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+      {/* <Box /> */}
+    </Canvas>
+  )
+}
